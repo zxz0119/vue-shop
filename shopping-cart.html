@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script src="vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>商品列表</h1>
+    <ul>
+      <li v-for="(product, index) in allProducts" :key="index" v-show="!searchText || product.name.includes(searchText)">
+        {{ product.name }} - {{ product.price }}
+        <button @click="addToCart(index)">加入购物车</button>
+        <span v-if="getQuantity(product) > 0"></span>
+
+      </li>
+    </ul>
+
+    <h1>购物车</h1>
+    <div>
+      <input type="text" v-model="searchText" placeholder="请输入要搜索的商品名称">
+      <button @click="searchCart">搜索</button>
+    </div>
+    <p v-if="searchResultType === 'cart'">当前展示的是购物车内容：</p>
+    <p v-if="searchResultType === 'products'">当前展示的是查询结果：</p>
+    <ul>
+      <li v-for="(item, index) in searchResult" :key="index">
+        {{ item.name }} - {{ item.price }} x {{ item.quantity }}
+        <button @click="removeFromCart(item)">删除</button>
+      </li>
+    </ul>
+
+    <p v-if="cart.length === 0">购物车为空</p>
+    <div v-if="cart.length > 0">
+      <ul>
+        <li v-for="(item, index) in cart" :key="index">
+          {{ item.name }} - {{ item.price }} x {{ item.quantity }}
+          <button @click="removeFromCart(item)">删除</button>
+        </li>
+      </ul>
+      <p>总价：{{ getTotalPrice() }}</p>
+      <button @click="checkout()">结算</button>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        products: [
+          { name: '商品1', price: 100 },
+          { name: '商品2', price: 200 },
+          { name: '商品3', price: 300 }
+        ],
+        allProducts: [],
+        cart: [],
+        searchText: '',
+        searchResult: [],
+        searchResultType: ''
+      },
+      methods: {
+        addToCart(index) {
+          const product = this.allProducts[index]
+          const cartItem = this.cart.find(item => item.name === product.name)
+
+          if (cartItem) {
+            cartItem.quantity++
+          } else {
+            this.cart.push({
+              name: product.name,
+              price: product.price,
+              quantity: 1
+            })
+          }
+
+          this.saveCart()
+        },
+        removeFromCart(item) {
+          this.cart = this.cart.filter(i => i.name !== item.name)
+          this.saveCart()
+        },
+        saveCart() {
+          localStorage.setItem('cart', JSON.stringify(this.cart))
+        },
+        loadCart() {
+          const cart = localStorage.getItem('cart')
+
+          if (cart) {
+            this.cart = JSON.parse(cart)
+          }
+        },
+        getQuantity(product) {
+          const cartItem = this.cart.find(item => item.name === product.name)
+
+          return cartItem ? cartItem.quantity : 0
+        },
+        getTotalPrice() {
+          return this.cart.reduce((total, item) => total + (item.price * item.quantity), 0)
+        },
+        checkout() {
+          alert('结算成功！')
+          this.cart = []
+          this.saveCart()
+        },
+        searchCart() {
+          if (!this.searchText.trim()) {
+            this.searchResult = this.cart.slice()
+            this.searchResultType = 'cart'
+            return
+          }
+
+          const result = this.allProducts.filter(item => item.name.includes(this.searchText))
+          this.searchResult = result
+          this.searchResultType = 'products'
+        }
+      },
+      mounted() {
+        this.loadCart()
+        this.allProducts = this.products.slice()
+      }
+    })
+  </script>
+</body>
+</html>
